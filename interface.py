@@ -44,18 +44,14 @@ class Interface():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.pos[0] > self.menu_width:
-                        position = (event.pos[0] - self.menu_width, event.pos[1])
-                        self.click_positions.append(position)
-                        print(f"Posição clicada: {position}")
                 
-
+            self.menu.handle_event(event)
             # Limpa a tela
             self.screen.fill(self.WHITE)
 
             # Desenha o menu
             self.menu.draw_menu()
+            
 
             # Desenha o quadro
             self.draw_quadro()
