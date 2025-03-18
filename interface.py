@@ -9,6 +9,7 @@ GRAY = (128, 128, 128)
 RED = (255, 0, 0)
 
 class Interface:
+
     def __init__(self):
         pygame.init()
         pygame.display.set_caption("Paint")
@@ -18,36 +19,50 @@ class Interface:
         self.font = pygame.font.SysFont('Arial', 20)
         self.loop = True
         self.meu_vetor = []
-    def Botao():
-        print("Botao")
+
+    def Botao(self):
+        print("Botaoooooo")
+
     def inicialize_tela(self):
+        #adiciona os botoes
+        botao = Botao(10, 10, 50, 20, GRAY, ["Botao"], [self.Botao])
         while self.loop:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    for i,j in self.meu_vetor:
-                        print(i,j)
+                    for i, j in self.meu_vetor:
+                        print(i, j)
                     self.loop = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    print(event)
-                    if event.button == 1:
-                        x,y = pygame.mouse.get_pos()
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        botao.handle_event(event)
+                        x, y = pygame.mouse.get_pos()
                         pygame.draw.circle(self.screen, RED, (x, y), 5)
                         self.meu_vetor.append((x, y))
-                        print(x,y)
+                        print(x, y)
+                #funcao de desenhar retas a partir do vetor de pontos self.meu_vetor
                 if len(self.meu_vetor) > 1:
-                    for i in range(len(self.meu_vetor)-1):
+                    for i in range(len(self.meu_vetor) - 1):
                         x1, y1 = self.meu_vetor[i]
-                        x2, y2 = self.meu_vetor[i+1]
+                        x2, y2 = self.meu_vetor[i + 1]
                         reta = Reta(x1, y1, x2, y2)
-                        reta.draw(self.screen, RED)
-                    reta = Reta(self.meu_vetor[0][0],self.meu_vetor[0][1],self.meu_vetor[i+1][0], self.meu_vetor[i+1][1])
-                    reta.draw(self.screen, RED)
-                    
+                        reta.drawDDA(self.screen, RED)
+                    reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
+                    reta.drawDDA(self.screen, RED)
+                    #funcao de desenhar circulos a partir do vetor de pontos self.meu_vetor
+                '''if len(self.meu_vetor) > 1:
+                    for i in range(len(self.meu_vetor) - 1):
+                        x1, y1 = self.meu_vetor[i]
+                        x2, y2 = self.meu_vetor[i + 1]
+                        reta = Reta(x1, y1, x2, y2)
+                        reta.drawDDA(self.screen, RED)
+                    reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
+                    reta.drawDDA(self.screen, RED)'''
+                #funcao limpar tela(tela e retas)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         self.meu_vetor = []
                         self.screen.fill(WHITE)
-                    
+            #desenha os botoes
+            botao.draw(self.screen)
             pygame.display.update()
             pygame.display.flip()
         pygame.quit()
@@ -61,18 +76,17 @@ class Botao:
             button_rect = pygame.Rect(x, y + i * (height + 10), width, height)
             self.buttons.append((button_text, button_rect, functions[i]))
         self.color = color
-
+    
     def draw(self, surface):
         for button_text, button_rect, _ in self.buttons:
             pygame.draw.rect(surface, self.color, button_rect)
-            surface.blit(button_text, (button_rect.x + 10, button_rect.y + 10))
+            surface.blit(button_text, (button_rect.x + 3, button_rect.y))
 
     def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_pos = event.pos
-            for _, button_rect, function in self.buttons:
-                if button_rect.collidepoint(mouse_pos):
-                    function()
+        mouse_pos = event.pos
+        for _, button_rect, function in self.buttons:
+            if button_rect.collidepoint(mouse_pos):
+                function()  # Call the function directly, not through event
 
 class Reta:
     def __init__(self, x1, y1, x2, y2):
@@ -81,23 +95,22 @@ class Reta:
         self.x2 = x2
         self.y2 = y2
         
-    def draw(self, surface, color):
-        dx = abs(self.x2 - self.x1)
-        dy = abs(self.y2 - self.y1)
-        sx = 1 if self.x1 < self.x2 else -1
-        sy = 1 if self.y1 < self.y2 else -1
-        err = dx - dy
-        while True:
-            surface.set_at((self.x1, self.y1), color)
-            if self.x1 == self.x2 and self.y1 == self.y2:
-                break
-            e2 = 2 * err
-            if e2 > -dy:
-                err -= dy
-                self.x1 += sx
-            if e2 < dx:
-                err += dx
-                self.y1 += sy
+    def drawDDA(self, surface, color):
+        dx = float(self.x2 - self.x1)
+        dy = float(self.y2 - self.y1)
+        x, y = float(self.x1), float(self.y1)
+        
+        if abs(dx) > abs(dy):
+            steps = abs(dx)
+        else:
+            steps = abs(dy)
+        xInc = dx / steps
+        yInc = dy / steps
+        for i in range(int(steps)):
+            x += xInc
+            y += yInc
+            surface.set_at((int(np.round(x)), int(np.round(y))), color)
+        
     
 
 if __name__ == "__main__":
