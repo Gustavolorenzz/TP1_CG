@@ -126,7 +126,14 @@ class ActionButton:
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1 and self.rect.collidepoint(event.pos):
+                if self.color == GRAY:
+                    self.color = GREEN
+                else:
+                    self.color = GRAY
+                self.active = (self.color == GREEN)
                 return True
+            else:
+                self.active = False
         return False
 
 # Função para desenhar o menu lateral
@@ -150,16 +157,17 @@ def main():
         InputField(10, 60, 130, "eixo x:"),
         InputField(10, 85, 130, "eixo y:"),
         InputField(10, 110, 130, "raio:"),
-        InputField(10, 135, 130, "inclinação:")
+        InputField(10, 135, 130, "largura:"),
+        InputField(10, 160, 130, "inclinação:")
     ]
     
     # Criar botões de ação
     action_buttons = [
-        ActionButton(20, 170, 110, 25, "Reta"),
-        ActionButton(20, 200, 110, 25, "Circunferência"),
-        ActionButton(20, 230, 110, 25, "Janela"),
-        ActionButton(20, 260, 110, 25, "Inclinar"),
-        ActionButton(20, 290, 110, 25, "Limpar")
+        ActionButton(20, 195, 110, 25, "Reta"),
+        ActionButton(20, 225, 110, 25, "Circunferência"),
+        ActionButton(20, 255, 110, 25, "Janela"),
+        ActionButton(20, 285, 110, 25, "Inclinar"),
+        ActionButton(20, 315, 110, 25, "Limpar")
     ]
     
     while running:
