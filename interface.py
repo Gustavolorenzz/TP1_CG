@@ -88,7 +88,38 @@ class Botao:
             if button_rect.collidepoint(mouse_pos):
                 function()  # Call the function directly, not through event
 class Circulo:
-    pass
+    def __init__(self, x1, x2, y1, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        self.raio = np.sqrt((self.x2-self.x1)**2 + (self.y2-self.y1)**2)
+
+    def plotaSimetricos(self, surface, x, y, color):
+        surface.set_at((x + self.x1, y + self.y1), color)
+        surface.set_at((-x + self.x1, y + self.y1), color)
+        surface.set_at((x + self.x1, -y + self.y1), color)
+        surface.set_at((-x + self.x1, -y + self.y1), color)
+        surface.set_at((y + self.x1, x + self.y1), color)
+        surface.set_at((-y + self.x1, x + self.y1), color)
+        surface.set_at((y + self.x1, -x + self.y1), color)
+        surface.set_at((-y + self.x1, -x + self.y1), color)
+
+    def draw(self, surface, color):
+        x, y, p = 0, self.raio, 3-2*self.raio
+        self.plotaSimetricos(surface, x, y, color)
+        while x < y:#2° OCTANTE
+            x += 1
+            if p < 0:
+                p += 4*x + 6
+            else:
+                y -= 1
+                p += 4*(x-y) + 10
+            self.plotaSimetricos(surface, x, y, color)
+        
+
+        
+
 class Reta:
     def __init__(self, x1, y1, x2, y2):
         self.x1 = x1
