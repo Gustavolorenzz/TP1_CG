@@ -38,7 +38,7 @@ class Interface:
                         pygame.draw.circle(self.screen, RED, (x, y), 5)
                         self.meu_vetor.append((x, y))
                         print(x, y)
-                #funcao de desenhar retas a partir do vetor de pontos self.meu_vetor
+                # DDA(retas) - funcao de desenhar retas a partir do vetor de pontos self.meu_vetor
                 if len(self.meu_vetor) > 1:
                     for i in range(len(self.meu_vetor) - 1):
                         x1, y1 = self.meu_vetor[i]
@@ -47,7 +47,7 @@ class Interface:
                         reta.drawDDA(self.screen, RED)
                     reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
                     reta.drawDDA(self.screen, RED)
-                    #funcao de desenhar circulos a partir do vetor de pontos self.meu_vetor
+                #Bresenham(retas)
                 '''if len(self.meu_vetor) > 1:
                     for i in range(len(self.meu_vetor) - 1):
                         x1, y1 = self.meu_vetor[i]
@@ -87,13 +87,54 @@ class Botao:
         for _, button_rect, function in self.buttons:
             if button_rect.collidepoint(mouse_pos):
                 function()  # Call the function directly, not through event
-
+class Circulo:
+    pass
 class Reta:
     def __init__(self, x1, y1, x2, y2):
         self.x1 = x1
         self.y1 = y1
         self.x2 = x2
         self.y2 = y2
+    def drawBreseham(self, surface, color):
+        dx = self.x2 - self.x1
+        dy = self.y2 - self.y1
+        x, y = self.x1, self.y1
+        surface.set_at((int(np.round(x)), int(np.round(y))), color)
+        if(dx>0):
+            xInc = 1
+        else:
+            xInc = -1
+            dx = -dx
+        if(dy>0):
+            yInc = 1
+        else:
+            yInc = -1
+            dy = -dy
+        if dx > dy:#1° CASO
+            p = 2*dy-dx
+            c1 = 2*dy
+            c2 = 2*(dy-dx)
+            for i in range(dx):
+                x += xInc
+                if p < 0:
+                    p += c1
+                else:
+                    y += yInc
+                    p += c2
+                surface.set_at(x, y, color)
+        else:#2° CASO
+            p = 2*dx-dy
+            c1 = 2*dx
+            c2 = 2*(dx-dy)
+            for i in range(dy):
+                y += yInc
+                if p < 0:
+                    p += c1
+                else:
+                    x += xInc
+                    p += c2
+                surface.set_at(x, y, color)        
+
         
     def drawDDA(self, surface, color):
         dx = float(self.x2 - self.x1)
