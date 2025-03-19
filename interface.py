@@ -38,7 +38,7 @@ class Interface:
                         pygame.draw.circle(self.screen, RED, (x, y), 5)
                         self.meu_vetor.append((x, y))
                         print(x, y)
-                # DDA(retas) - funcao de desenhar retas a partir do vetor de pontos self.meu_vetor
+                # DDA(retas)
                 if len(self.meu_vetor) > 1:
                     for i in range(len(self.meu_vetor) - 1):
                         x1, y1 = self.meu_vetor[i]
@@ -87,6 +87,7 @@ class Botao:
         for _, button_rect, function in self.buttons:
             if button_rect.collidepoint(mouse_pos):
                 function()  # Call the function directly, not through event
+
 class Circulo:
     def __init__(self, x1, x2, y1, y2):
         self.x1 = x1
@@ -121,11 +122,13 @@ class Circulo:
         
 
 class Reta:
+
     def __init__(self, x1, y1, x2, y2):
         self.x1 = x1
         self.y1 = y1
         self.x2 = x2
         self.y2 = y2
+
     def drawBreseham(self, surface, color):
         dx = self.x2 - self.x1
         dy = self.y2 - self.y1
@@ -166,7 +169,6 @@ class Reta:
                     p += c2
                 surface.set_at(x, y, color)        
 
-        
     def drawDDA(self, surface, color):
         dx = float(self.x2 - self.x1)
         dy = float(self.y2 - self.y1)
