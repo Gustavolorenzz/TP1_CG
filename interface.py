@@ -19,43 +19,86 @@ class Interface:
         self.font = pygame.font.SysFont('Arial', 20)
         self.loop = True
         self.meu_vetor = []
+        self.estrutura = []
+        self.cor = RED
+        self.poligono = "reta"
+        self.modo_atual = "DDA"
+        self.clear = False
 
-    def Botao(self):
-        print("Botaoooooo")
+    def desenhar_reta(self):
+        # Será chamado quando o botão "Reta" for clicado
+        print("Modo: Reta selecionado")
+        self.poligono = "reta"
+
+    def desenhar_circulo(self):
+        # Será chamado quando o botão "Círculo" for clicado
+        print("Modo: Círculo selecionado")
+        self.modo_atual = "Bresenham"
+        self.poligono = "circulo"
+        
+    def modo_dda(self):
+        # Será chamado quando o botão "DDA" for clicado
+        print("Algoritmo: DDA selecionado")
+        self.modo_atual = "DDA"
+        
+    def modo_bresenham(self):
+        # Será chamado quando o botão "Bresenham" for clicado
+        print("Algoritmo: Bresenham selecionado")
+        self.modo_atual = "Bresenham"
+    
+    def handle_event(self):
+        if self.modo_atual == "DDA":
+            self.poligono == "reta"
+            if len(self.meu_vetor) > 1:
+                for i in range(len(self.meu_vetor) - 1):
+                    x1, y1 = self.meu_vetor[i]
+                    x2, y2 = self.meu_vetor[i + 1]
+                    reta = Reta(x1, y1, x2, y2)
+                    reta.drawDDA(self.screen, self.cor)
+                reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
+                reta.drawDDA(self.screen, self.cor)
+            else:
+                print("É necessário ter mais de 1 ponto para desenhar uma reta")
+        elif self.modo_atual == "Bresenham" and self.poligono == "reta":
+            if len(self.meu_vetor) > 1:
+                for i in range(len(self.meu_vetor) - 1):
+                    x1, y1 = self.meu_vetor[i]
+                    x2, y2 = self.meu_vetor[i + 1]
+                    reta = Reta(x1, y1, x2, y2)
+                    reta.drawBreseham(self.screen, self.cor)
+                reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
+                reta.drawBreseham(self.screen, self.cor)
+            else:
+                print("É necessário ter mais de 1 ponto para desenhar uma reta")
+        elif self.modo_atual == "Bresenham" and self.poligono == "circulo":
+            if len(self.meu_vetor) == 2:
+                x1, y1 = self.meu_vetor[i]
+                x2, y2 = self.meu_vetor[i + 1]
+                circulo = Circulo(x1, y1, x2, y2)
+                circulo.draw(self.screen, self.cor)
+            else:
+                print("É necessário ter apenas 2 pontos para desenhar um círculo")
+
 
     def inicialize_tela(self):
         #adiciona os botoes
-        botao = Botao(10, 10, 50, 20, GRAY, ["Botao"], [self.Botao])
+        botao = Botao(10, 10, 150, 30, GRAY, 
+                     ["Reta", "Circunferência", "DDA", "Bresenham"], 
+                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham])
         while self.loop:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     for i, j in self.meu_vetor:
                         print(i, j)
                     self.loop = False
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        botao.handle_event(event)
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and botao.handle_event(event):
+                        
                         x, y = pygame.mouse.get_pos()
                         pygame.draw.circle(self.screen, RED, (x, y), 5)
                         self.meu_vetor.append((x, y))
                         print(x, y)
-                # DDA(retas)
-                if len(self.meu_vetor) > 1:
-                    for i in range(len(self.meu_vetor) - 1):
-                        x1, y1 = self.meu_vetor[i]
-                        x2, y2 = self.meu_vetor[i + 1]
-                        reta = Reta(x1, y1, x2, y2)
-                        reta.drawDDA(self.screen, RED)
-                    reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
-                    reta.drawDDA(self.screen, RED)
-                #Bresenham(retas)
-                '''if len(self.meu_vetor) > 1:
-                    for i in range(len(self.meu_vetor) - 1):
-                        x1, y1 = self.meu_vetor[i]
-                        x2, y2 = self.meu_vetor[i + 1]
-                        reta = Reta(x1, y1, x2, y2)
-                        reta.drawDDA(self.screen, RED)
-                    reta = Reta(self.meu_vetor[0][0], self.meu_vetor[0][1], self.meu_vetor[i + 1][0], self.meu_vetor[i + 1][1])
-                    reta.drawDDA(self.screen, RED)'''
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not(botao.handle_event(event)):
+                    self.handle_event()
                 #funcao limpar tela(tela e retas)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
@@ -63,30 +106,38 @@ class Interface:
                         self.screen.fill(WHITE)
             #desenha os botoes
             botao.draw(self.screen)
+            
             pygame.display.update()
             pygame.display.flip()
         pygame.quit()
 
 class Botao:
     def __init__(self, x, y, width, height, color, texts, functions):
-        self.font = pygame.font.SysFont('Arial', 20)
+        self.font = pygame.font.SysFont('Arial', 16)
         self.buttons = []
         for i, text in enumerate(texts):
             button_text = self.font.render(text, True, BLACK)
-            button_rect = pygame.Rect(x, y + i * (height + 10), width, height)
+            button_rect = pygame.Rect(x, y + i * (height + 5), width, height)
             self.buttons.append((button_text, button_rect, functions[i]))
         self.color = color
+        self.highlight_color = (min(color[0] + 50, 255), 
+                               min(color[1] + 50, 255), 
+                               min(color[2] + 50, 255))
     
     def draw(self, surface):
         for button_text, button_rect, _ in self.buttons:
             pygame.draw.rect(surface, self.color, button_rect)
-            surface.blit(button_text, (button_rect.x + 3, button_rect.y))
+            pygame.draw.rect(surface, BLACK, button_rect, 1)  # Borda
+            text_rect = button_text.get_rect(center=button_rect.center)
+            surface.blit(button_text, text_rect)
 
     def handle_event(self, event):
         mouse_pos = event.pos
         for _, button_rect, function in self.buttons:
             if button_rect.collidepoint(mouse_pos):
                 function()  # Call the function directly, not through event
+                return False
+        return True
 
 class Circulo:
     def __init__(self, x1, x2, y1, y2):
