@@ -56,6 +56,17 @@ class Interface:
             print("Algoritmo: Bresenham selecionado")
             self.modo_atual = "Bresenham"
     
+    #altera o modo de seleção
+    def modo_selecao(self):
+        self.state = not self.state
+        if self.state:
+            print("Modo: Seleção selecionado")
+            self.selecao_inicio = None
+            self.obj_selected = []
+            self.poligono = ""
+        else:
+            print("Modo: Seleção desativado")
+    
     def handle_event(self):
         if self.modo_atual == "DDA"  and self.poligono == "reta":
             if len(self.meu_vetor) > 1:
@@ -100,13 +111,65 @@ class Interface:
             else:
                 print("É necessário ter apenas 2 pontos para desenhar um círculo")
         self.poligono = ""
+    
+    #os pontos precisam ser clicados em ordem
+    def verificar_selecao(self, x1, y1, x2, y2):
+        if x1 > x2:
+            x1, x2 = x2, x1
+        if y1 > y2:
+            y1, y2 = y2, y1
+        
+        self.obj_selected = []
+        #verifica os objetos que possuem pontos dentro da área de seleção
+        for i, estrutura in enumerate(self.estrutura):
+            for x, y in estrutura:
+                if x1 <= x <= x2 and y1 <= y <= y2:
+                    self.obj_selected.append(i)
+                    break
+        print(f"Objetos selecionados: {self.obj_selected}")
+        self.redesenhar_tela()
+
+    def redesenhar_tela(self):
+        #limpa a tela e redesenha todos os objetos
+        self.screen.fill(WHITE)
+        
+        for i, pontos in enumerate(self.estrutura):
+            cor = BLUE if i in self.obj_selected else RED
+            tipo = self.poligonos[i]
+            
+            if tipo == "retaDDA":
+                for j in range(len(pontos) - 1):
+                    x1, y1 = pontos[j]
+                    x2, y2 = pontos[j + 1]
+                    reta = Reta(x1, y1, x2, y2)
+                    reta.drawDDA(self.screen, cor)
+                if len(pontos) > 2:
+                    reta = Reta(pontos[-1][0], pontos[-1][1], pontos[0][0], pontos[0][1])
+                    reta.drawDDA(self.screen, cor)
+            
+            elif tipo == "retaBresenham":
+                for j in range(len(pontos) - 1):
+                    x1, y1 = pontos[j]
+                    x2, y2 = pontos[j + 1]
+                    reta = Reta(x1, y1, x2, y2)
+                    reta.drawBreseham(self.screen, cor)
+                if len(pontos) > 2:
+                    reta = Reta(pontos[-1][0], pontos[-1][1], pontos[0][0], pontos[0][1])
+                    reta.drawBreseham(self.screen, cor)
+            
+            elif tipo == "circulo":
+                x1, y1 = pontos[0]
+                x2, y2 = pontos[1]
+                circulo = Circulo(x1, x2, y1, y2)
+                circulo.draw(self.screen, cor)
+
 
 
     def inicialize_tela(self):
         #adiciona os botoes
         botao = Botao(10, 10, 150, 30, GRAY, 
-                     ["Reta", "Circunferência", "DDA", "Bresenham"], 
-                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham])
+                     ["Reta", "Circunferência", "DDA", "Bresenham", "Selecionar"], 
+                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham, self.modo_selecao])
         while self.loop:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -118,23 +181,54 @@ class Interface:
                         m+=1
                         print("-----")  # Separador entre elementos de self.estrutura
                     self.loop = False
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and botao.handle_event(event):
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if botao.handle_event(event, self.state):
+                        #modo normal
+                        if not self.state:
+                            x, y = pygame.mouse.get_pos()
+                            pygame.draw.circle(self.screen, RED, (x, y), 3)
+                            self.meu_vetor.append((x, y))
+                            print(f"Ponto adicionado:{x}, {y}")
+                        else:
+                            self.selecao_inicio = pygame.mouse.get_pos()
+                    else:
+                        if not self.state:
+                            self.handle_event()
                         
-                        x, y = pygame.mouse.get_pos()
-                        pygame.draw.circle(self.screen, RED, (x, y), 3)
-                        self.meu_vetor.append((x, y))
-                        print(f"Ponto adicionado:{x}, {y}")
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not(botao.handle_event(event)):
-                    self.handle_event()
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    if self.state and self.selecao_inicio is not None:
+                        # Finaliza a seleção
+                        selecao_fim = pygame.mouse.get_pos()
+                        self.verificar_selecao(self.selecao_inicio[0], self.selecao_inicio[1], 
+                                              selecao_fim[0], selecao_fim[1])
+                        self.selecao_inicio = None
+                
+                elif event.type == pygame.MOUSEMOTION and self.state and self.selecao_inicio is not None:
+                    # Redesenha a tela para não acumular retângulos de seleção
+                    self.redesenhar_tela()
+                    
+                    # Desenha o retângulo de seleção
+                    pos_atual = pygame.mouse.get_pos()
+                    select_rect = pygame.Rect(
+                        min(self.selecao_inicio[0], pos_atual[0]),
+                        min(self.selecao_inicio[1], pos_atual[1]),
+                        abs(pos_atual[0] - self.selecao_inicio[0]),
+                        abs(pos_atual[1] - self.selecao_inicio[1])
+                    )
+                    pygame.draw.rect(self.screen, BLUE, select_rect, 1)
+
+
+
                 #funcao limpar tela(tela e retas)
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_c:
                         self.meu_vetor = []
                         self.estrutura = []
                         self.poligonos = []
+                        self.obj_selected = []
                         self.screen.fill(WHITE)
             #desenha os botoes
-            botao.draw(self.screen)
+            botao.draw(self.screen, self.state)
             
             pygame.display.update()
             pygame.display.flip()
@@ -144,6 +238,7 @@ class Botao:
     def __init__(self, x, y, width, height, color, texts, functions):
         self.font = pygame.font.SysFont('Arial', 16)
         self.buttons = []
+
         for i, text in enumerate(texts):
             button_text = self.font.render(text, True, BLACK)
             button_rect = pygame.Rect(x, y + i * (height + 5), width, height)
@@ -152,23 +247,41 @@ class Botao:
         self.highlight_color = (min(color[0] + 50, 255), 
                                min(color[1] + 50, 255), 
                                min(color[2] + 50, 255))
+        self.disabled_color = (100, 100, 100)
     
-    def draw(self, surface):
-        for button_text, button_rect, _, is_active in self.buttons:
-            current_color = self.highlight_color if is_active else self.color
-            pygame.draw.rect(surface, current_color , button_rect)
+    def draw(self, surface, selection_mode=False):
+        for i, (button_text, button_rect, _, is_active) in enumerate(self.buttons):
+            # Determina a cor do botão
+            if i == 4:  # Botão "Selecionar"
+                current_color = self.highlight_color if is_active else self.color
+            elif selection_mode and i < 4:  # Botões desabilitados no modo de seleção
+                current_color = self.disabled_color
+            else:
+                current_color = self.highlight_color if is_active else self.color
+                
+            pygame.draw.rect(surface, current_color, button_rect)
             pygame.draw.rect(surface, BLACK, button_rect, 1)  # Borda
             text_rect = button_text.get_rect(center=button_rect.center)
             surface.blit(button_text, text_rect)
 
-    def handle_event(self, event):
+    def handle_event(self, event, selection_mode=False):
         mouse_pos = event.pos
         for i, (_, button_rect, function, _) in enumerate(self.buttons):
             if button_rect.collidepoint(mouse_pos):
-                if i > 1:
+                # Se estiver no modo de seleção, só permite clicar no botão "Selecionar"
+                if selection_mode and i != 4 and i != 0 and i != 1:
+                    return True  # Retorna True para não processar o clique como um ponto
+                
+                # Para os botões de algoritmo (DDA e Bresenham)
+                if i > 1 and i < 4:
                     self.buttons = [(text, rect, func, False) for text, rect, func, _ in self.buttons]
                     self.buttons[i] = (self.buttons[i][0], self.buttons[i][1], self.buttons[i][2], True)
-                function()  # Call the function directly, not through event
+                
+                # Para o botão de seleção, alterna o estado ativo
+                if i == 4:
+                    self.buttons[i] = (self.buttons[i][0], self.buttons[i][1], self.buttons[i][2], not self.buttons[i][3])
+                
+                function()  # Chama a função diretamente
                 return False
         return True
 
