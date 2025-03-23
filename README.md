@@ -2,7 +2,7 @@
 
 ## Descrição
 Este projeto implementa uma interface gráfica para desenho de formas geométricas utilizando a biblioteca **Pygame**.  
-A aplicação permite desenhar **retas (DDA e Bresenham)** e **circunferências**, além de aplicar **transformações geométricas** (rotação, translação, escala e reflexão) e realizar **recorte de retas** usando os algoritmos de **Cohen-Sutherland** e **Liang-Barsky**.
+A aplicação permite desenhar **retas/polígonos (DDA e Bresenham)** e **circunferências**, além de aplicar **transformações geométricas** (rotação, translação, escala e reflexão) e realizar **recorte de janela** usando os algoritmos de **Cohen-Sutherland** e **Liang-Barsky**.
 
 ## Funcionalidades
 - Desenho de **retas** (DDA e Bresenham)
@@ -26,8 +26,8 @@ pip install pygame numpy
 ## Como Executar
 1. Clone o repositório ou baixe os arquivos.
 ```sh
-git clone https://github.com/seu-usuario/nome-do-repositorio.git
-cd nome-do-repositorio
+git clone https://github.com/Gustavolorenzz/TP1_CG.git
+cd TP1_CG
 ```
 
 2. Execute o programa com:
@@ -38,11 +38,11 @@ python interface.py
 ## Testes
 Foram realizados testes manuais em cada funcionalidade. Os testes foram gravados e podem ser acessados nos seguintes links:
 
-Desenho de Retas e Círculos, Transformações Geométricas, Recorte de Retas: [https://youtu.be/bxGqETv9Mzw]
+Desenho de Retas e Círculos, Transformações Geométricas, Recorte de Retas: https://youtu.be/bxGqETv9Mzw
 
 ## Autor
-Desenvolvido por [gugustu]. Entre em contato para dúvidas ou sugestões.
+Desenvolvido por **gugustu**. Entre em contato para dúvidas ou sugestões.
 
-📧 Email: [livius8941@gmail.com]
+📧 Email: **livius8941@gmail.com**
 
-🔗 GitHub: [https://github.com/Gustavolorenzz]
+🔗 GitHub: **https://github.com/Gustavolorenzz**
