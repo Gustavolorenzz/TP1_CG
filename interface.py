@@ -9,6 +9,7 @@ GRAY = (128, 128, 128)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+LIGHT_GRAY = (200, 200, 200)
 
 class Interface:
     #definições de variáveis iniciais
@@ -37,6 +38,19 @@ class Interface:
         self.selecao_inicio = None
         self.obj_selected = []
         self.operacao = ""
+        #campos de texto
+        # Campos de texto para entrada de valores
+        self.rotation_field = CampoTexto(170, 400, 60, 30, "Ângulo")
+        self.translate_x_field = CampoTexto(170, 440, 60, 30, "X")
+        self.translate_y_field = CampoTexto(240, 440, 60, 30, "Y")
+        self.scale_x_field = CampoTexto(170, 480, 60, 30, "X")
+        self.scale_y_field = CampoTexto(240, 480, 60, 30, "Y")
+
+        self.labels = {
+            "rotation": self.font.render("Ângulo:", True, BLACK),
+            "translate": self.font.render("Translação:", True, BLACK),
+            "scale": self.font.render("Escala:", True, BLACK)
+        }
     
     
 
@@ -83,10 +97,24 @@ class Interface:
             self.operacao = "rotacionar"
             print("Modo: rotacao selecionado")
     #translada o poligono selecionado
+    #POR ALGUM MOTIVO, NÃO CONSEGUI CHAMAR O HANDLE_EVENT PARA A TRANSLAÇÃO, TIVE QUE JOGAR O CODIGO AQUI
+    #(aparentemente estava dando problema do input K_EVENT estar sendo obrigatório) -> deu certo
     def transladar(self):
         if self.state and len(self.obj_selected) > 0:
-            self.operacao = "transladar"
             print("Modo: translacao selecionado")
+            try:
+                dx = int(self.translate_x_field.get_value())
+                dy = int(self.translate_y_field.get_value())
+                print(f"Translating by dx={dx}, dy={dy}")
+
+                for i in self.obj_selected:
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        estrutura[j] = (estrutura[j][0] + dx, estrutura[j][1] + dy)
+                self.redesenhar_tela() 
+            except ValueError:
+                print("Valores inválidos para translação") 
+            self.poligono = ""
     #escala o poligono selecionado
     def escalar(self):
         if self.state and len(self.obj_selected) > 0:
@@ -175,6 +203,8 @@ class Interface:
                     for j in range(len(estrutura)):
                         estrutura[j] = (2*estrutura[0][0]- estrutura[j][0], 2*estrutura[0][1]- estrutura[j][1])
             self.redesenhar_tela() 
+        
+               
         self.poligono = ""
         self.operacao = ""
     
@@ -229,7 +259,22 @@ class Interface:
                 circulo = Circulo(x1, x2, y1, y2)
                 circulo.draw(self.screen, cor)
 
-
+    def draw_input_fields(self):
+        # Desenha os campos de texto e seus labels
+        
+        # Rotação
+        self.screen.blit(self.labels["rotation"], (10, 405))
+        self.rotation_field.draw(self.screen)
+        
+        # Translação
+        self.screen.blit(self.labels["translate"], (10, 445))
+        self.translate_x_field.draw(self.screen)
+        self.translate_y_field.draw(self.screen)
+        
+        # Escala
+        self.screen.blit(self.labels["scale"], (10, 485))
+        self.scale_x_field.draw(self.screen)
+        self.scale_y_field.draw(self.screen)
 
     def inicialize_tela(self):
         #adiciona os botoes
@@ -249,6 +294,27 @@ class Interface:
                         m+=1
                         print("-----")  #separador entre elementos de self.estrutura
                     self.loop = False
+                
+                
+                text_field_handled = False
+                
+                if self.state:
+                    if self.rotation_field.handle_event(event):
+                        text_field_handled = True
+                    elif self.translate_x_field.handle_event(event):
+                        text_field_handled = True
+                    elif self.translate_y_field.handle_event(event):
+                        text_field_handled = True
+                    elif self.scale_x_field.handle_event(event):
+                        text_field_handled = True
+                    elif self.scale_y_field.handle_event(event):
+                        text_field_handled = True
+
+                if text_field_handled:
+                    continue
+
+                
+
                 #adiciona um ponto ao vetor de pontos
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if botao.handle_event(event, self.state):
@@ -266,6 +332,13 @@ class Interface:
                         else:
                             # Chama a função de refletir se o estado estiver ativo
                             if self.operacao in ["refletirX", "refletirY", "refletirXY"]:
+                                if event.type == pygame.KEYDOWN and self.state and len(self.obj_selected) > 0:
+                                    if self.operacao == "rotacionar":
+                                        self.handle_event()
+                                    elif self.operacao == "transladar":
+                                        self.handle_event()
+                                    elif self.operacao == "escalar":
+                                        self.handle_event()
                                 self.handle_event()
                         
                 elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -302,6 +375,9 @@ class Interface:
                         self.screen.fill(WHITE)
             #desenha os botoes
             botao.draw(self.screen, self.state)
+
+            if self.state:
+                self.draw_input_fields()
             
             pygame.display.update()
             pygame.display.flip()
@@ -312,7 +388,7 @@ class Botao:
     def __init__(self, x, y, width, height, color, texts, functions):
         self.font = pygame.font.SysFont('Arial', 16)
         self.buttons = []
-
+        j = 0
         for i, text in enumerate(texts):
             button_text = self.font.render(text, True, BLACK)
             button_rect = pygame.Rect(x, y + i * (height + 5), width, height)
@@ -358,6 +434,61 @@ class Botao:
                 function()  #chama a função correspondente do botao
                 return False
         return True
+    
+class CampoTexto:
+    def __init__(self, x, y, width, height, placeholder=""):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = LIGHT_GRAY
+        self.text = ""
+        self.placeholder = placeholder
+        self.active = False
+        self.font = pygame.font.SysFont('Arial', 16)
+        
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+        # Ativa/desativa o campo ao clicar
+            if self.rect.collidepoint(event.pos):
+                self.active = True
+                return True
+            else:
+                self.active = False
+        
+        if event.type == pygame.KEYDOWN and self.active:
+            if event.key == pygame.K_BACKSPACE:
+                self.text = self.text[:-1]
+            elif event.key == pygame.K_RETURN:
+                self.active = False
+            else:
+                # Apenas aceita números, ponto decimal e sinal negativo
+                if event.unicode.isnumeric() or event.unicode == '.' or event.unicode == '-':
+                    self.text += event.unicode
+            return True
+        return False
+    
+    def draw(self, surface):
+        # Define a cor do campo baseado no estado
+        color = BLUE if self.active else GRAY
+        pygame.draw.rect(surface, LIGHT_GRAY, self.rect)
+        pygame.draw.rect(surface, color, self.rect, 2)
+        
+        # Renderiza o texto ou placeholder
+        if self.text:
+            text_surface = self.font.render(self.text, True, BLACK)
+        else:
+            text_surface = self.font.render(self.placeholder, True, (100, 100, 100))
+        
+        # Calcula a posição do texto
+        text_rect = text_surface.get_rect(midleft=(self.rect.x + 5, self.rect.y + self.rect.height/2))
+        
+        # Limita o texto ao tamanho do campo
+        surface.blit(text_surface, text_rect)
+    
+    def get_value(self):
+        try:
+            return float(self.text) if self.text else 0
+        except ValueError:
+            return 0
+    
 
 class Circulo:
     #construtor da classe Circulo
