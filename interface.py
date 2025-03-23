@@ -38,8 +38,7 @@ class Interface:
         self.selecao_inicio = None
         self.obj_selected = []
         self.operacao = ""
-        #campos de texto
-        # Campos de texto para entrada de valores
+        #campos de texto para entrada de valores
         self.rotation_field = CampoTexto(170, 400, 60, 30, "Ângulo")
         self.translate_x_field = CampoTexto(170, 440, 60, 30, "X")
         self.translate_y_field = CampoTexto(240, 440, 60, 30, "Y")
@@ -104,8 +103,8 @@ class Interface:
                         x, y = estrutura[j]
                         x -= estrutura[0][0]
                         y -= estrutura[0][1]
-                        x_novo = x*np.cos(np.radians(angulo)) - y*np.sin(np.radians(angulo))
-                        y_novo = x*np.sin(np.radians(angulo)) + y*np.cos(np.radians(angulo))
+                        x_novo = int(x*np.cos(np.radians(angulo)) - y*np.sin(np.radians(angulo)))
+                        y_novo = int(x*np.sin(np.radians(angulo)) + y*np.cos(np.radians(angulo)))
                         estrutura[j] = (x_novo + estrutura[0][0], y_novo + estrutura[0][1])
                 self.redesenhar_tela()
             except ValueError:
@@ -118,8 +117,8 @@ class Interface:
         if self.state and len(self.obj_selected) > 0:
             print("Modo: translacao selecionado")
             try:
-                dx = int(self.translate_x_field.get_value())
-                dy = int(self.translate_y_field.get_value())
+                dx = int(np.round(self.translate_x_field.get_value()))
+                dy = int(np.round(self.translate_y_field.get_value()))
                 print(f"Translating by dx={dx}, dy={dy}")
 
                 for i in self.obj_selected:
@@ -138,16 +137,19 @@ class Interface:
                 sx = float(self.scale_x_field.get_value())
                 sy = float(self.scale_y_field.get_value())
                 print(f"Scaling by sx={sx}, sy={sy}")
-                for i in self.obj_selected:
-                    estrutura = self.estrutura[i]
-                    for j in range(len(estrutura)):
-                        x, y = estrutura[j]
-                        x -= estrutura[0][0]
-                        y -= estrutura[0][1]
-                        x_novo = x*sx
-                        y_novo = y*sy
-                        estrutura[j] = (x_novo + estrutura[0][0], y_novo + estrutura[0][1])
-                self.redesenhar_tela()
+                if sx != 0 and sy != 0:
+                    for i in self.obj_selected:
+                        estrutura = self.estrutura[i]
+                        for j in range(len(estrutura)):
+                            x, y = estrutura[j]
+                            x -= estrutura[0][0]
+                            y -= estrutura[0][1]
+                            x_novo = int(np.round(x*sx))
+                            y_novo = int(np.round(y*sy))
+                            estrutura[j] = (x_novo + estrutura[0][0], y_novo + estrutura[0][1])
+                    self.redesenhar_tela()
+                else:
+                    print("Valores de escala não podem ser 0")
             except ValueError:
                 print("Valores inválidos para escala")
             self.poligono = ""
@@ -259,7 +261,7 @@ class Interface:
     def redesenhar_tela(self):
         #limpa a tela e redesenha todos os objetos
         self.screen.fill(WHITE)
-        
+        #redesenha os objetos selecionados e não selecionados(precisa sempre de ficar apagando a tela para não acumular)
         for i, pontos in enumerate(self.estrutura):
             cor = BLUE if i in self.obj_selected else RED
             tipo = self.poligonos[i]
@@ -328,7 +330,7 @@ class Interface:
                 
                 
                 text_field_handled = False
-                
+                #verifica se o campo de texto foi clicado
                 if self.state:
                     if self.rotation_field.handle_event(event):
                         text_field_handled = True
@@ -340,7 +342,7 @@ class Interface:
                         text_field_handled = True
                     elif self.scale_y_field.handle_event(event):
                         text_field_handled = True
-
+                #se o campo de texto foi clicado, não processa o evento de clique do mouse
                 if text_field_handled:
                     continue
 
