@@ -17,7 +17,7 @@ class Interface:
         #inicializa a janela do Pygame
         pygame.init()
         pygame.display.set_caption("Paint")
-        self.width, self.height = 800, 600
+        self.width, self.height = 800, 700
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.screen.fill(WHITE)
         self.font = pygame.font.SysFont('Arial', 20)
@@ -38,18 +38,26 @@ class Interface:
         self.selecao_inicio = None
         self.obj_selected = []
         self.operacao = ""
+        #variáveis para janela
+        self.clipping_window = ClippingWindow()
+        self.defining_clip_window = False
+        self.clipping_algorithm = "cohen_sutherland" 
+        self.clipped_estrutura = []
+        self.clipped_poligonos = []
+        self.clipping_applied = False
         #campos de texto para entrada de valores
-        self.rotation_field = CampoTexto(170, 400, 60, 30, "Ângulo")
-        self.translate_x_field = CampoTexto(170, 440, 60, 30, "X")
-        self.translate_y_field = CampoTexto(240, 440, 60, 30, "Y")
-        self.scale_x_field = CampoTexto(170, 480, 60, 30, "X")
-        self.scale_y_field = CampoTexto(240, 480, 60, 30, "Y")
+        self.rotation_field = CampoTexto(170, 520, 60, 30, "Ângulo")
+        self.translate_x_field = CampoTexto(170, 560, 60, 30, "X")
+        self.translate_y_field = CampoTexto(240, 560, 60, 30, "Y")
+        self.scale_x_field = CampoTexto(170, 600, 60, 30, "X")
+        self.scale_y_field = CampoTexto(240, 600, 60, 30, "Y")
 
         self.labels = {
             "rotation": self.font.render("Ângulo:", True, BLACK),
             "translate": self.font.render("Translação:", True, BLACK),
             "scale": self.font.render("Escala:", True, BLACK)
-        }
+    }
+
     
     
 
@@ -87,8 +95,13 @@ class Interface:
             self.poligono = ""
         else:
             print("Modo: Seleção desativado")
+            self.screen.fill(WHITE)
             self.obj_selected = []
-            self.redesenhar_tela()
+            # Reset clipping window state if needed
+            if not self.defining_clip_window:
+                self.clipping_window.active = False
+                self.clipping_window = ClippingWindow()
+                self.redesenhar_tela()
 
     #rotaciona o poligono selecionado
     def rotacionar(self):
@@ -168,6 +181,79 @@ class Interface:
         if self.state  and len(self.obj_selected) > 0:
             self.operacao = "refletirXY"
             print("Modo: refletirXY selecionado")
+
+    #função para definir a janela de recorte
+    def definir_janela_recorte(self):
+        """Inicia o modo de definição da janela de recorte."""
+        self.defining_clip_window = True
+        self.meu_vetor = []
+        print("Modo: Definir janela de recorte selecionado")
+        print("Clique para definir os cantos da janela de recorte")
+
+    def usar_cohen_sutherland(self):
+        """Define o algoritmo de Cohen-Sutherland como o algoritmo de recorte a ser usado."""
+        self.clipping_algorithm = "cohen_sutherland"
+        print("Algoritmo de recorte: Cohen-Sutherland selecionado")
+
+    def usar_liang_barsky(self):
+        """Define o algoritmo de Liang-Barsky como o algoritmo de recorte a ser usado."""
+        self.clipping_algorithm = "liang_barsky"
+        print("Algoritmo de recorte: Liang-Barsky selecionado")
+
+    def aplicar_recorte(self):
+        if not self.clipping_window.active:
+            print("Primeiro defina uma janela de recorte")
+            return
+        
+        # Criar listas para armazenar os objetos recortados
+        self.clipped_estrutura = []
+        self.clipped_poligonos = []
+        
+        # Processar todas as retas
+        for i, pontos in enumerate(self.estrutura):
+            if self.poligonos[i] in ["retaDDA", "retaBresenham"]:
+                tipo = self.poligonos[i]
+                
+                # Criar um novo conjunto de pontos para o polígono recortado
+                clipped_pontos = []
+                
+                # Processar cada segmento de linha do polígono
+                for j in range(len(pontos) - 1):
+                    x1, y1 = pontos[j]
+                    x2, y2 = pontos[j + 1]
+                    
+                    # Aplicar algoritmo de recorte selecionado
+                    if self.clipping_algorithm == "cohen_sutherland":
+                        visible, coords = self.clipping_window.cohen_sutherland(x1, y1, x2, y2)
+                    else:  # liang_barsky
+                        visible, coords = self.clipping_window.liang_barsky(x1, y1, x2, y2)
+                    
+                    # Se a linha estiver visível, adicionar ao novo polígono
+                    if visible and coords:
+                        nx1, ny1, nx2, ny2 = coords
+                        
+                        # Se este é o primeiro ponto ou diferente do último adicionado
+                        if not clipped_pontos or (nx1, ny1) != clipped_pontos[-1]:
+                            clipped_pontos.append((nx1, ny1))
+                        
+                        clipped_pontos.append((nx2, ny2))
+                
+                # Se o polígono tiver pontos suficientes, adicionar à nova estrutura
+                if len(clipped_pontos) >= 2:
+                    self.clipped_estrutura.append(clipped_pontos)
+                    self.clipped_poligonos.append(tipo)
+            
+            elif self.poligonos[i] == "circulo":
+                # Manter círculos inalterados por enquanto
+                self.clipped_estrutura.append(pontos)
+                self.clipped_poligonos.append("circulo")
+        
+        self.clipping_applied = True
+        
+        # Redesenhar a tela com os objetos recortados
+        self.redesenhar_tela()
+        
+        print(f"Recorte aplicado usando algoritmo {self.clipping_algorithm}")   
 
     #o handle event serve para as alterações que acontecem quando se aperta um botão
     def handle_event(self):
@@ -258,13 +344,36 @@ class Interface:
         print(f"Objetos selecionados: {self.obj_selected}")
         self.redesenhar_tela()
 
+
+    def resetar_recorte(self):
+        """Reseta o recorte aplicado e volta para a visualização original."""
+        self.clipping_applied = False
+        self.redesenhar_tela()
+        print("Recorte resetado")
+
+
     def redesenhar_tela(self):
-        #limpa a tela e redesenha todos os objetos
+        # Limpa a tela
         self.screen.fill(WHITE)
-        #redesenha os objetos selecionados e não selecionados(precisa sempre de ficar apagando a tela para não acumular)
-        for i, pontos in enumerate(self.estrutura):
+
+        # Desenhar a janela de recorte, se estiver ativa
+        if self.clipping_window.active and (self.state or self.defining_clip_window):
+            self.clipping_window.draw(self.screen, GREEN)
+
+        # Determinar qual estrutura de dados usar
+        estrutura_to_use = self.clipped_estrutura if self.clipping_applied else self.estrutura
+        poligonos_to_use = self.clipped_poligonos if self.clipping_applied else self.poligonos
+
+        for i, pontos in enumerate(estrutura_to_use):
+            if i >= len(poligonos_to_use):
+                continue  # Proteger contra índices inválidos
+                
             cor = BLUE if i in self.obj_selected else RED
-            tipo = self.poligonos[i]
+            tipo = poligonos_to_use[i]
+            
+            # Desenhar os pontos para todos os objetos
+            for ponto in pontos:
+                pygame.draw.circle(self.screen, cor, ponto, 3)
             
             if tipo == "retaDDA":
                 for j in range(len(pontos) - 1):
@@ -296,24 +405,30 @@ class Interface:
         # Desenha os campos de texto e seus labels
         
         # Rotação
-        self.screen.blit(self.labels["rotation"], (10, 405))
+        self.screen.blit(self.labels["rotation"], (10, 530))
         self.rotation_field.draw(self.screen)
         
         # Translação
-        self.screen.blit(self.labels["translate"], (10, 445))
+        self.screen.blit(self.labels["translate"], (10, 570))
         self.translate_x_field.draw(self.screen)
         self.translate_y_field.draw(self.screen)
         
         # Escala
-        self.screen.blit(self.labels["scale"], (10, 485))
+        self.screen.blit(self.labels["scale"], (10, 610))
         self.scale_x_field.draw(self.screen)
         self.scale_y_field.draw(self.screen)
 
     def inicialize_tela(self):
         #adiciona os botoes
         botao = Botao(10, 10, 150, 30, GRAY, 
-                     ["Reta", "Circunferência", "DDA", "Bresenham", "Selecionar", "Rotacionar", "Transladar", "Escalar", "Refletir X", "Refletir Y", "Refletir XY"],
-                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham, self.modo_selecao, self.rotacionar, self.transladar, self.escalar, self.refletirX, self.refletirY, self.refletirXY]) 
+                 ["Reta", "Circunferência", "DDA", "Bresenham", "Selecionar", 
+                  "Rotacionar", "Transladar", "Escalar", "Refletir X", "Refletir Y", 
+                  "Refletir XY", "Definir Recorte", "Cohen-Sutherland", "Liang-Barsky", "Aplicar Recorte"],
+                 [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, 
+                  self.modo_bresenham, self.modo_selecao, self.rotacionar, 
+                  self.transladar, self.escalar, self.refletirX, self.refletirY, 
+                  self.refletirXY, self.definir_janela_recorte, self.usar_cohen_sutherland, 
+                  self.usar_liang_barsky, self.aplicar_recorte])
         while self.loop:
             for event in pygame.event.get():
                 #fecha a janela
@@ -351,6 +466,27 @@ class Interface:
                 #adiciona um ponto ao vetor de pontos
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if botao.handle_event(event, self.state):
+                        if self.defining_clip_window:
+                            x,y = pygame.mouse.get_pos()
+                            pygame.draw.circle(self.screen, GREEN, (x, y), 3)
+                            self.meu_vetor.append((x, y))
+                            print(f"Ponto de recorte adicionado: {x}, {y}")
+                            
+                            # Se tiver 2 pontos, define a janela de recorte
+                            if len(self.meu_vetor) == 2:
+
+                                x1, y1 = self.meu_vetor[0]
+                                x2, y2 = self.meu_vetor[1]
+                                self.clipping_window.set_coordinates(
+                                    min(x1, x2), min(y1, y2),
+                                    max(x1, x2), max(y1, y2)
+                                )
+                                self.clipping_window.active = True
+                                self.defining_clip_window = False
+                                self.meu_vetor = []
+                                self.redesenhar_tela()
+                                print("Janela de recorte definida")
+
                         #modo normal
                         if not self.state:
                             x, y = pygame.mouse.get_pos()
@@ -405,6 +541,8 @@ class Interface:
                         self.estrutura = []
                         self.poligonos = []
                         self.obj_selected = []
+                        self.clipping_window.active = False
+                        self.defining_clip_window = False
                         self.screen.fill(WHITE)
             #desenha os botoes
             botao.draw(self.screen, self.state)
@@ -608,17 +746,121 @@ class Reta:
         dx = float(self.x2 - self.x1)
         dy = float(self.y2 - self.y1)
         x, y = float(self.x1), float(self.y1)
+        if dx!=0 or dy!=0:
+            if abs(dx) > abs(dy):
+                steps = abs(dx)
+            else:
+                steps = abs(dy)
+            xInc = dx / steps
+            yInc = dy / steps
+            for i in range(int(steps)):
+                x += xInc
+                y += yInc
+                surface.set_at((int(np.round(x)), int(np.round(y))), color)
+
+class ClippingWindow:
+    def __init__(self, x_min=300, y_min=300, x_max=400, y_max=400):
+        self.x_min = x_min
+        self.y_min = y_min
+        self.x_max = x_max
+        self.y_max = y_max
+        self.color = BLACK
+        self.active = False
+
+    def draw(self, surface, color):
+        if self.active:
+            pygame.draw.rect(surface, color, (self.x_min, self.y_min, 
+                                              self.x_max - self.x_min, 
+                                              self.y_max - self.y_min), 2)
+    
+    def set_coordinates(self, x1, y1, x2, y2):
+        self.x_min = min(x1, x2)
+        self.y_min = min(y1, y2)
+        self.x_max = max(x1, x2)
+        self.y_max = max(y1, y2)
+    
+    def cohen_sutherland(self, x1, y1, x2, y2):
+        # Códigos de região
+        if x1 == x2 and y1 == y2:
+            if (self.x_min <= x1 <= self.x_max and self.y_min <= y1 <= self.y_max):
+                return True, (x1, y1, x2, y2)
+            return False, None
         
-        if abs(dx) > abs(dy):
-            steps = abs(dx)
+        accept = False
+        done = False
+        while not done:
+            codA = self.calc_cod(x1, y1)
+            codB = self.calc_cod(x2, y2)
+            if codA == 0 and codB == 0:# segmento completamente dentro da janela
+                accept = True
+                done = True
+            elif codA & codB != 0:#segmento completamente fora da janela
+                done = True
+            else:
+                cod = codA if codA != 0 else codB
+                if cod & 1:
+                    x = self.x_min
+                    y = y1 + (y2 - y1) * (self.x_min - x1) / (x2 - x1)
+                elif cod & 2:
+                    x = self.x_max
+                    y = y1 + (y2 - y1) * (self.x_max - x1) / (x2 - x1)
+                elif cod & 4:
+                    y = self.y_min
+                    x = x1 + (x2 - x1) * (self.y_min - y1) / (y2 - y1)
+                elif cod & 8:
+                    y = self.y_max
+                    x = x1 + (x2 - x1) * (self.y_max - y1) / (y2 - y1)
+                if cod == codA:
+                    x1, y1 = x, y
+                else:
+                    x2, y2 = x, y
+        if accept:
+            return accept, (int(np.round(x1)), int(np.round(y1)), int(np.round(x2)), int(np.round(y2)))
         else:
-            steps = abs(dy)
-        xInc = dx / steps
-        yInc = dy / steps
-        for i in range(int(steps)):
-            x += xInc
-            y += yInc
-            surface.set_at((int(np.round(x)), int(np.round(y))), color)
+            return accept, None
+
+    def calc_cod(self,x,y):
+        cod = 0
+        if x < self.x_min:
+            cod += 1
+        if x > self.x_max:
+            cod += 2
+        if y < self.y_min:
+            cod += 4
+        if y > self.y_max:
+            cod += 8
+        return cod
+    
+    def liang_barsky(self, x1, y1, x2, y2):
+        if x1 == x2 and y1 == y2:
+            if (self.x_min <= x1 <= self.x_max and self.y_min <= y1 <= self.y_max):
+                return True, (x1, y1, x2, y2)
+            return False, None
+        dx = x2 - x1
+        dy = y2 - y1
+        p = [-dx, dx, -dy, dy]
+        q = [x1 - self.x_min, self.x_max - x1, y1 - self.y_min, self.y_max - y1]
+        u1 = 0
+        u2 = 1
+        for i in range(4):
+            # P = 0, linha paralela ao lado da janela
+            if p[i] == 0:
+                if q[i] < 0:
+                    return False, None
+            else:
+                u = q[i] / p[i]
+                if p[i] < 0:
+                    u1 = max(u1, u)
+                else:
+                    u2 = min(u2, u)
+        if u1 > u2:
+            return False, None
+        x1 = x1 + u1 * dx
+        y1 = y1 + u1 * dy
+        x2 = x1 + u2 * dx
+        y2 = y1 + u2 * dy
+        return True, (int(np.round(x1)), int(np.round(y1)), int(np.round(x2)), int(np.round(y2)))
+        
     
 
 if __name__ == "__main__":
