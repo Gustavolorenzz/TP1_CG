@@ -863,13 +863,12 @@ class ClippingWindow:
                     u2 = min(u2, u)
         if u1 > u2:
             return False, None
-        x1 = x1 + u1 * dx
-        y1 = y1 + u1 * dy
-        x2 = x1 + u2 * dx
-        y2 = y1 + u2 * dy
+        x1_clip = x1 + u1 * dx
+        y1_clip = y1 + u1 * dy
+        x2_clip = x1 + u2 * dx
+        y2_clip = y1 + u2 * dy
         
-        
-        return True, (int(np.round(x1)), int(np.round(y1)), int(np.round(x2)), int(np.round(y2)))
+        return True, (int(np.round(x1_clip)), int(np.round(y1_clip)), int(np.round(x2_clip)), int(np.round(y2_clip)))
         
     
 
