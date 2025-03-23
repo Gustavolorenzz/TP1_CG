@@ -95,6 +95,7 @@ class Interface:
             self.poligono = ""
         else:
             print("Modo: Seleção desativado")
+            self.clipping_applied = False
             self.screen.fill(WHITE)
             self.obj_selected = []
             # Reset clipping window state if needed
@@ -218,9 +219,12 @@ class Interface:
                 clipped_pontos = []
                 
                 # Processar cada segmento de linha do polígono
-                for j in range(len(pontos) - 1):
+                for j in range(len(pontos)):
                     x1, y1 = pontos[j]
-                    x2, y2 = pontos[j + 1]
+                    if j == len(pontos) - 1:
+                        x2, y2 = pontos[0]
+                    else:
+                        x2, y2 = pontos[j + 1]
                     
                     # Aplicar algoritmo de recorte selecionado
                     if self.clipping_algorithm == "cohen_sutherland":
@@ -850,8 +854,12 @@ class ClippingWindow:
             else:
                 u = q[i] / p[i]
                 if p[i] < 0:
+                    if u > u2:
+                        return False, None
                     u1 = max(u1, u)
                 else:
+                    if u < u1:
+                        return False, None
                     u2 = min(u2, u)
         if u1 > u2:
             return False, None
@@ -859,6 +867,8 @@ class ClippingWindow:
         y1 = y1 + u1 * dy
         x2 = x1 + u2 * dx
         y2 = y1 + u2 * dy
+        
+        
         return True, (int(np.round(x1)), int(np.round(y1)), int(np.round(x2)), int(np.round(y2)))
         
     
