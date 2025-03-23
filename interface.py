@@ -36,6 +36,7 @@ class Interface:
         self.state = False
         self.selecao_inicio = None
         self.obj_selected = []
+        self.operacao = ""
     
     
 
@@ -78,30 +79,36 @@ class Interface:
 
     #rotaciona o poligono selecionado
     def rotacionar(self):
-        if self.state:
-            pass
+        if self.state and len(self.obj_selected) > 0:
+            self.operacao = "rotacionar"
+            print("Modo: rotacao selecionado")
     #translada o poligono selecionado
     def transladar(self):
-        if self.state:
-            pass
+        if self.state and len(self.obj_selected) > 0:
+            self.operacao = "transladar"
+            print("Modo: translacao selecionado")
     #escala o poligono selecionado
     def escalar(self):
-        if self.state:
-            pass
+        if self.state and len(self.obj_selected) > 0:
+            self.operacao = "escalar"
+            print("Modo: escala selecionado")
     #reflete o poligono selecionado no eixo X
     def refletirX(self):
-        if self.state:
-            pass
+        if self.state and len(self.obj_selected) > 0:
+            self.operacao = "refletirX"
+            print("Modo: refletirX selecionado")
     #reflete o poligono selecionado no eixo Y
     def refletirY(self):
-        if self.state:
-            pass
+        if self.state and len(self.obj_selected) > 0:
+            self.operacao = "refletirY"
+            print("Modo: refletirY selecionado")
     #reflete o poligono selecionado no eixo X e Y
     def refletirXY(self):
-        if self.state:
-            pass
+        if self.state  and len(self.obj_selected) > 0:
+            self.operacao = "refletirXY"
+            print("Modo: refletirXY selecionado")
 
-    #desenha a reta ou circulo de acordo com o algoritmo selecionado
+    #o handle event serve para as alterações que acontecem quando se aperta um botão
     def handle_event(self):
         if self.modo_atual == "DDA"  and self.poligono == "reta":
             if len(self.meu_vetor) > 1:
@@ -144,7 +151,32 @@ class Interface:
                 self.meu_vetor = []
             else:
                 print("É necessário ter apenas 2 pontos para desenhar um círculo")
+        #operação de refletir no eixo X
+        elif self.state and self.operacao == "refletirX":
+            for i in self.obj_selected:
+                if not(self.poligonos[i] == "circulo"):
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        estrutura[j] = (estrutura[j][0],2*estrutura[0][1]- estrutura[j][1])
+            self.redesenhar_tela()
+        #operação de refletir no eixo Y
+        elif self.state and self.operacao == "refletirY" and len(self.obj_selected) > 0:
+            for i in self.obj_selected:
+                if not(self.poligonos[i] == "circulo"):
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        estrutura[j] = (2*estrutura[0][0]- estrutura[j][0], estrutura[j][1])
+            self.redesenhar_tela()
+        #operação de refletir no eixo X e Y
+        elif self.state and self.operacao == "refletirXY" and len(self.obj_selected) > 0:
+            for i in self.obj_selected:
+                if not(self.poligonos[i] == "circulo"):
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        estrutura[j] = (2*estrutura[0][0]- estrutura[j][0], 2*estrutura[0][1]- estrutura[j][1])
+            self.redesenhar_tela() 
         self.poligono = ""
+        self.operacao = ""
     
     #os pontos inicial e final da seleção precisam estar em ordem, do superior esquerdo para o inferior direito
     def verificar_selecao(self, x1, y1, x2, y2):
@@ -202,8 +234,8 @@ class Interface:
     def inicialize_tela(self):
         #adiciona os botoes
         botao = Botao(10, 10, 150, 30, GRAY, 
-                     ["Reta", "Circunferência", "DDA", "Bresenham", "Selecionar"], 
-                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham, self.modo_selecao])
+                     ["Reta", "Circunferência", "DDA", "Bresenham", "Selecionar", "Rotacionar", "Transladar", "Escalar", "Refletir X", "Refletir Y", "Refletir XY"],
+                     [self.desenhar_reta, self.desenhar_circulo, self.modo_dda, self.modo_bresenham, self.modo_selecao, self.rotacionar, self.transladar, self.escalar, self.refletirX, self.refletirY, self.refletirXY]) 
         while self.loop:
             for event in pygame.event.get():
                 #fecha a janela
@@ -231,6 +263,10 @@ class Interface:
                     else:
                         if not self.state:
                             self.handle_event()
+                        else:
+                            # Chama a função de refletir se o estado estiver ativo
+                            if self.operacao in ["refletirX", "refletirY", "refletirXY"]:
+                                self.handle_event()
                         
                 elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     if self.state and self.selecao_inicio is not None:
@@ -307,7 +343,7 @@ class Botao:
         for i, (_, button_rect, function, _) in enumerate(self.buttons):
             if button_rect.collidepoint(mouse_pos):
                 #se estiver no modo de seleção, só permite clicar no botão "Selecionar"
-                if selection_mode and i != 4 and i != 0 and i != 1:
+                if selection_mode and i < 4 and i !=4:
                     return True  # Retorna True para não processar o clique como um ponto
                 
                 #para os botões de algoritmo (DDA e Bresenham)
