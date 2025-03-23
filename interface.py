@@ -94,11 +94,25 @@ class Interface:
     #rotaciona o poligono selecionado
     def rotacionar(self):
         if self.state and len(self.obj_selected) > 0:
-            self.operacao = "rotacionar"
             print("Modo: rotacao selecionado")
+            try:
+                angulo = int(self.rotation_field.get_value())
+                print(f"Rotating by angle={angulo}")
+                for i in self.obj_selected:
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        x, y = estrutura[j]
+                        x -= estrutura[0][0]
+                        y -= estrutura[0][1]
+                        x_novo = x*np.cos(np.radians(angulo)) - y*np.sin(np.radians(angulo))
+                        y_novo = x*np.sin(np.radians(angulo)) + y*np.cos(np.radians(angulo))
+                        estrutura[j] = (x_novo + estrutura[0][0], y_novo + estrutura[0][1])
+                self.redesenhar_tela()
+            except ValueError:
+                print("Valor inválido para rotação")
     #translada o poligono selecionado
     #POR ALGUM MOTIVO, NÃO CONSEGUI CHAMAR O HANDLE_EVENT PARA A TRANSLAÇÃO, TIVE QUE JOGAR O CODIGO AQUI
-    #(aparentemente estava dando problema do input K_EVENT estar sendo obrigatório) -> deu certo
+    #(aparentemente estava dando problema do input K_EVENT estar sendo obrigatório) -> deu certo :)
     def transladar(self):
         if self.state and len(self.obj_selected) > 0:
             print("Modo: translacao selecionado")
