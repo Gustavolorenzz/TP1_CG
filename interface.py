@@ -110,6 +110,7 @@ class Interface:
                 self.redesenhar_tela()
             except ValueError:
                 print("Valor inválido para rotação")
+            self.poligono = ""
     #translada o poligono selecionado
     #POR ALGUM MOTIVO, NÃO CONSEGUI CHAMAR O HANDLE_EVENT PARA A TRANSLAÇÃO, TIVE QUE JOGAR O CODIGO AQUI
     #(aparentemente estava dando problema do input K_EVENT estar sendo obrigatório) -> deu certo :)
@@ -132,8 +133,24 @@ class Interface:
     #escala o poligono selecionado
     def escalar(self):
         if self.state and len(self.obj_selected) > 0:
-            self.operacao = "escalar"
-            print("Modo: escala selecionado")
+            try:
+                print("Modo: escala selecionado")
+                sx = float(self.scale_x_field.get_value())
+                sy = float(self.scale_y_field.get_value())
+                print(f"Scaling by sx={sx}, sy={sy}")
+                for i in self.obj_selected:
+                    estrutura = self.estrutura[i]
+                    for j in range(len(estrutura)):
+                        x, y = estrutura[j]
+                        x -= estrutura[0][0]
+                        y -= estrutura[0][1]
+                        x_novo = x*sx
+                        y_novo = y*sy
+                        estrutura[j] = (x_novo + estrutura[0][0], y_novo + estrutura[0][1])
+                self.redesenhar_tela()
+            except ValueError:
+                print("Valores inválidos para escala")
+            self.poligono = ""
     #reflete o poligono selecionado no eixo X
     def refletirX(self):
         if self.state and len(self.obj_selected) > 0:
