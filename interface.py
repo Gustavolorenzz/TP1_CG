@@ -1,3 +1,22 @@
+#  Trabalho Pratico 1 - Computação Gráfica
+#  Aluno: Gustavo Lorenzo
+#  Date: 2025-03-23
+"""Este código define uma interface gráfica usando Pygame para desenhar e manipular formas.
+Inclui funcionalidades para desenhar linhas e círculos, selecionar e transformar formas,
+e aplicar algoritmos de recorte (Cohen-Sutherland e Liang-Barsky) às formas.
+
+A classe Interface inicializa a janela do Pygame e configura vários atributos para desenhar e manipular formas.
+Inclui métodos para desenhar linhas e círculos, selecionar formas, rotacionar, transladar, escalar e refletir formas.
+Também inclui métodos para definir e aplicar janelas de recorte usando os algoritmos Cohen-Sutherland e Liang-Barsky.
+
+A classe Botao define botões para a interface, permitindo ao usuário selecionar diferentes modos de desenho e transformação.
+A classe CampoTexto define campos de entrada de texto para inserir valores para transformações.
+A classe Circulo define um círculo e inclui um método para desenhar o círculo usando simetria.
+A classe Reta define uma linha e inclui métodos para desenhar a linha usando os algoritmos de Bresenham e DDA.
+A classe ClippingWindow define uma janela de recorte e inclui métodos para aplicar os algoritmos de recorte Cohen-Sutherland e Liang-Barsky.
+
+A função principal inicializa a classe Interface e inicia o loop de eventos do Pygame."""
+
 import pygame
 import sys
 import numpy as np
@@ -776,13 +795,14 @@ class ClippingWindow:
             pygame.draw.rect(surface, color, (self.x_min, self.y_min, 
                                               self.x_max - self.x_min, 
                                               self.y_max - self.y_min), 2)
-    
+    # Define as coordenadas da janela de recorte
     def set_coordinates(self, x1, y1, x2, y2):
         self.x_min = min(x1, x2)
         self.y_min = min(y1, y2)
         self.x_max = max(x1, x2)
         self.y_max = max(y1, y2)
     
+    # Algoritmo de Cohen-Sutherland
     def cohen_sutherland(self, x1, y1, x2, y2):
         # Códigos de região
         if x1 == x2 and y1 == y2:
@@ -823,6 +843,7 @@ class ClippingWindow:
         else:
             return accept, None
 
+    # Calcula o código de região de um ponto
     def calc_cod(self,x,y):
         cod = 0
         if x < self.x_min:
@@ -835,6 +856,7 @@ class ClippingWindow:
             cod += 8
         return cod
     
+    # Algoritmo de Liang-Barsky
     def liang_barsky(self, x1, y1, x2, y2):
         if x1 == x2 and y1 == y2:
             if (self.x_min <= x1 <= self.x_max and self.y_min <= y1 <= self.y_max):
